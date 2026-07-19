@@ -120,3 +120,9 @@ alert.WAV        # Notification sound
 This project is an independent fan-made utility and is not affiliated with, endorsed by, or sponsored by Roblox or the developers of Clover Retribution.
 
 Use at your own discretion and ensure your use complies with the game's rules and Roblox's Terms of Use.
+
+## Support
+
+This project is completely free to use. If you find it helpful and would like to support its development, you can buy me a coffee on Ko-fi!
+
+https://ko-fi.com/r1nkashime
