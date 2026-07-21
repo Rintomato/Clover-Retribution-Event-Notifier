@@ -35,6 +35,7 @@ class Notifier:
             "Five Star Dragon Ball",
             "Six Star Dragon Ball",
             "Seven Star Dragon Ball",
+            "Blessed Sphere",
         }
 
         elemental_wisps = {

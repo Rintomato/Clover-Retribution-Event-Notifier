@@ -19,7 +19,7 @@ class EventDetector:
 
             "Desert Village Rumor": [
                 "Somebody has seen something they might not survive to tell, word has it they're in the Desert Village",
-                "Somebody has seen something they might not survive to tell", "word has it they're in the Desert Village"
+                "Somebody has seen something they might not survive to tell", "word has it they're in the Desert Village", "they're in the Desert Village",
             ],
 
             "Craftsman": [
@@ -56,7 +56,8 @@ class EventDetector:
 
             "Giant Demon Assault": [
                 "The seal shattered",
-                "a giant demon now walks the land"
+                "a giant demon now walks the land",
+                "is fixed on the capital's destruction",
             ],
 
             "Ayato": [
