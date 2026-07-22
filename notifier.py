@@ -19,10 +19,14 @@ class Notifier:
                 config = json.load(file)
                 self.webhook_url = config.get("webhook_url", "")
                 self.events = config.get("events", {})
+                self.sound_enabled = config.get("sound_enabled", True)
+                self.discord_enabled = config.get("discord_enabled", True)
         except Exception as e:
             print(f"Failed to load config.json: {e}")
             self.webhook_url = ""
             self.events = {}
+            self.sound_enabled = True
+            self.discord_enabled = True
 
     def notify(self, event_name, score, server_name=""):
         self.reload_config()
@@ -69,8 +73,10 @@ class Notifier:
         print("=" * 60)
         print()
 
-        self.play_sound()
-        self.send_discord_webhook(event_name, score, timestamp, server_name)
+        if self.sound_enabled:
+            self.play_sound()
+        if self.discord_enabled:
+            self.send_discord_webhook(event_name, score, timestamp, server_name)
 
     def play_sound(self):
         try:

@@ -1,16 +1,20 @@
 import json
 
-import easyocr
+import cv2
 import numpy as np
 from mss import mss
 from PIL import Image
+from paddleocr import PaddleOCR
 
 
 class OCRReader:
     def __init__(self):
-        print("Loading EasyOCR... (first launch may take a while)")
-        self.reader = easyocr.Reader(["en"], gpu=False)
-        print("EasyOCR loaded!")
+        print("Loading PaddleOCR... (first launch may take a while)")
+        self.reader = PaddleOCR(
+            use_angle_cls=False,
+            lang="en"
+        )
+        print("PaddleOCR loaded!")
 
     def read_chat(self):
         with open("config.json", "r") as f:
@@ -27,25 +31,35 @@ class OCRReader:
 
         image = np.array(image)
 
-        results = self.reader.readtext(
+        # Same upscale as your tests
+        image = cv2.resize(
             image,
-            detail=1,
-            paragraph=False,
-            allowlist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]:.,!'?-()/ "
+            None,
+            fx=3,
+            fy=3,
+            interpolation=cv2.INTER_CUBIC
         )
 
+        result = self.reader.ocr(image, cls=False)
+
         lines = []
+        debug_lines = []
 
-        for _, text, confidence in results:
-            # Ignore garbage with very low confidence
-            if confidence < 0.40:
-                continue
+        if result and result[0]:
+            for line in result[0]:
+                text = line[1][0].strip()
+                confidence = float(line[1][1])
 
-            text = text.strip()
+                if confidence < 0.40:
+                    continue
 
-            if not text:
-                continue
+                if not text:
+                    continue
 
-            lines.append(text)
+                lines.append(text)
+                debug_lines.append({
+                    "text": text,
+                    "confidence": confidence
+                })
 
-        return "\n".join(lines)
+        return "\n".join(lines), debug_lines
