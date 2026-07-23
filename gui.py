@@ -72,6 +72,16 @@ MUTED = ("gray35", "gray65")
 ACCENT_HOVER = ("gray75", "gray28")
 PAGE_PAD = 22
 
+if getattr(sys, "frozen", False):
+    # Folder containing CREN.exe
+    APP_DIR = os.path.dirname(sys.executable)
+
+    # PyInstaller's bundled resource folder (_internal in onedir)
+    RESOURCE_DIR = sys._MEIPASS
+else:
+    # Running directly from Python source
+    APP_DIR = os.path.dirname(os.path.abspath(__file__))
+    RESOURCE_DIR = APP_DIR
 
 def make_card(parent, **kwargs):
     """A rounded 'card' frame used to visually group related widgets."""
@@ -211,9 +221,8 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.iconbitmap(os.path.join(APP_DIR, "CREN.ico"))
+        self.iconbitmap(os.path.join(RESOURCE_DIR, "CREN.ico"))
         self.title("C.R.E.N.")
-        self.iconbitmap(os.path.join(APP_DIR, "CREN.ico"))
 
         self.title("🚨 Event Notifier")
         self.geometry("960x830")
