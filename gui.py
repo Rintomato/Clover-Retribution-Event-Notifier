@@ -35,6 +35,7 @@ README, not a free-form/add-your-own list.
 """
 
 import os
+import sys
 import json
 import time
 import queue
@@ -95,7 +96,12 @@ def make_back_button(parent, command):
         text_color=MUTED, hover_color=ACCENT_HOVER,
     )
 
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, "frozen", False):
+    # Running as a PyInstaller-built .exe — store user data next to the
+    # executable itself, not inside the temp/_internal extraction folder.
+    APP_DIR = os.path.dirname(sys.executable)
+else:
+    APP_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(APP_DIR, "config.json")
 DETECTIONS_PATH = os.path.join(APP_DIR, "detections.json")
 EVENT_STATS_PATH = os.path.join(APP_DIR, "event_stats.csv")
@@ -206,8 +212,8 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("🚨 Event Notifier")
-        self.geometry("960x800")
-        self.minsize(860, 720)
+        self.geometry("960x830")
+        self.minsize(860, 700)
 
         self.config_data = load_config()
         self.detections = load_detections()

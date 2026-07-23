@@ -7,3 +7,7 @@ dist/
 .vscode/
 
 config.json
+detections.json
+event_stats.csv
+detections_*.csv
+detections_*.txt

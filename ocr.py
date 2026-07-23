@@ -4,17 +4,27 @@ import cv2
 import numpy as np
 from mss import mss
 from PIL import Image
-from paddleocr import PaddleOCR
+from rapidocr import EngineType, LangDet, LangRec, ModelType, OCRVersion, RapidOCR
 
 
 class OCRReader:
     def __init__(self):
-        print("Loading PaddleOCR... (first launch may take a while)")
-        self.reader = PaddleOCR(
-            use_angle_cls=False,
-            lang="en"
+        print("Loading RapidOCR... (first launch may take a while)")
+        # RapidOCR 3.9.x configuration.
+        # Lightweight ONNX Runtime + English PP-OCRv4 mobile models.
+        self.reader = RapidOCR(
+            params={
+                "Det.engine_type": EngineType.ONNXRUNTIME,
+                "Det.lang_type": LangDet.EN,
+                "Det.model_type": ModelType.MOBILE,
+                "Det.ocr_version": OCRVersion.PPOCRV4,
+                "Rec.engine_type": EngineType.ONNXRUNTIME,
+                "Rec.lang_type": LangRec.EN,
+                "Rec.model_type": ModelType.MOBILE,
+                "Rec.ocr_version": OCRVersion.PPOCRV4,
+            }
         )
-        print("PaddleOCR loaded!")
+        print("RapidOCR loaded!")
 
     def read_chat(self):
         with open("config.json", "r") as f:
@@ -40,15 +50,17 @@ class OCRReader:
             interpolation=cv2.INTER_CUBIC
         )
 
-        result = self.reader.ocr(image, cls=False)
+        # cls (angle classification) stays disabled to match the old
+        # use_angle_cls=False behavior -- chat text is never rotated.
+        result = self.reader(image, use_cls=False)
 
         lines = []
         debug_lines = []
 
-        if result and result[0]:
-            for line in result[0]:
-                text = line[1][0].strip()
-                confidence = float(line[1][1])
+        if result and result.txts:
+            for text, score in zip(result.txts, result.scores):
+                text = text.strip()
+                confidence = float(score)
 
                 if confidence < 0.40:
                     continue

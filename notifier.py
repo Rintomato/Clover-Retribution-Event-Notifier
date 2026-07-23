@@ -2,8 +2,9 @@ from datetime import datetime
 import threading
 import time
 import winsound
-import requests
 import json
+import urllib.request
+import urllib.error
 
 
 class Notifier:
@@ -78,6 +79,31 @@ class Notifier:
         if self.discord_enabled:
             self.send_discord_webhook(event_name, score, timestamp, server_name)
 
+    @staticmethod
+    def _request_json(url, payload, method="POST", timeout=5):
+        """Send a JSON body via urllib and return (status_code, parsed_body_or_None)."""
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=data,
+            method=method,
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                status = resp.getcode()
+                body = resp.read().decode("utf-8")
+        except urllib.error.HTTPError as e:
+            status = e.code
+            body = e.read().decode("utf-8") if e.fp else ""
+        parsed = None
+        if body:
+            try:
+                parsed = json.loads(body)
+            except json.JSONDecodeError:
+                parsed = None
+        return status, parsed
+
     def play_sound(self):
         try:
             winsound.PlaySound(
@@ -135,17 +161,13 @@ class Notifier:
         }
 
         try:
-            response = requests.post(
-                self.webhook_url + "?wait=true",
-                json=payload,
-                timeout=5
+            status, message = self._request_json(
+                self.webhook_url + "?wait=true", payload, method="POST", timeout=5
             )
 
-            if response.status_code not in (200, 201):
-                print(f"Discord webhook failed ({response.status_code}): {response.text}")
+            if status not in (200, 201):
+                print(f"Discord webhook failed ({status}): {message}")
                 return
-
-            message = response.json()
 
             threading.Thread(
                 target=self.mark_despawned,
@@ -205,10 +227,8 @@ class Notifier:
         }
 
         try:
-            requests.patch(
-                f"{self.webhook_url}/messages/{message_id}",
-                json=payload,
-                timeout=5
+            self._request_json(
+                f"{self.webhook_url}/messages/{message_id}", payload, method="PATCH", timeout=5
             )
 
         except Exception as e:
