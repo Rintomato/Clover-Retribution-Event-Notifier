@@ -211,6 +211,10 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        self.iconbitmap(os.path.join(APP_DIR, "CREN.ico"))
+        self.title("C.R.E.N.")
+        self.iconbitmap(os.path.join(APP_DIR, "CREN.ico"))
+
         self.title("🚨 Event Notifier")
         self.geometry("960x830")
         self.minsize(860, 700)

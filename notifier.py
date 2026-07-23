@@ -2,28 +2,28 @@ from datetime import datetime
 import threading
 import time
 import winsound
+import requests
 import json
-import urllib.request
-import urllib.error
 
 
 class Notifier:
     def __init__(self):
-        # Paste your Discord webhook URL here
         self.webhook_url = ""
-
         self.reload_config()
 
     def reload_config(self):
         try:
             with open("config.json", "r", encoding="utf-8") as file:
                 config = json.load(file)
+
                 self.webhook_url = config.get("webhook_url", "")
                 self.events = config.get("events", {})
                 self.sound_enabled = config.get("sound_enabled", True)
                 self.discord_enabled = config.get("discord_enabled", True)
+
         except Exception as e:
             print(f"Failed to load config.json: {e}")
+
             self.webhook_url = ""
             self.events = {}
             self.sound_enabled = True
@@ -51,12 +51,14 @@ class Notifier:
 
         if event_name in dragon_events:
             config_name = "Dragon Balls"
+
         elif event_name in elemental_wisps:
             config_name = "Elemental Wisp"
-        else:   
+
+        else:
             config_name = event_name
 
-
+        # Check if this event is enabled
         if not self.events.get(config_name, True):
             return
 
@@ -74,35 +76,18 @@ class Notifier:
         print("=" * 60)
         print()
 
+        # Desktop sound
         if self.sound_enabled:
             self.play_sound()
-        if self.discord_enabled:
-            self.send_discord_webhook(event_name, score, timestamp, server_name)
 
-    @staticmethod
-    def _request_json(url, payload, method="POST", timeout=5):
-        """Send a JSON body via urllib and return (status_code, parsed_body_or_None)."""
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=data,
-            method=method,
-            headers={"Content-Type": "application/json"},
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                status = resp.getcode()
-                body = resp.read().decode("utf-8")
-        except urllib.error.HTTPError as e:
-            status = e.code
-            body = e.read().decode("utf-8") if e.fp else ""
-        parsed = None
-        if body:
-            try:
-                parsed = json.loads(body)
-            except json.JSONDecodeError:
-                parsed = None
-        return status, parsed
+        # Discord notification
+        if self.discord_enabled:
+            self.send_discord_webhook(
+                event_name,
+                score,
+                timestamp,
+                server_name
+            )
 
     def play_sound(self):
         try:
@@ -110,11 +95,19 @@ class Notifier:
                 "alert.wav",
                 winsound.SND_FILENAME | winsound.SND_ASYNC
             )
+
         except Exception as e:
             print(f"Failed to play sound: {e}")
 
-    def send_discord_webhook(self, event_name, score, timestamp, server_name=""):
+    def send_discord_webhook(
+        self,
+        event_name,
+        score,
+        timestamp,
+        server_name=""
+    ):
         if not self.webhook_url:
+            print("Discord webhook URL is empty.")
             return
 
         fields = [
@@ -144,42 +137,84 @@ class Notifier:
 
         payload = {
             "content": "@everyone",
+
             "allowed_mentions": {
                 "parse": ["everyone"]
             },
+
             "embeds": [
                 {
                     "title": "🚨 Event Detected!",
+
                     "description": f"**{event_name}**",
+
                     "color": 0x00FF00,
+
                     "fields": fields,
+
                     "footer": {
-                        "text": "Event Notifier"
+                        "text": "C.R.E.N."
                     }
                 }
             ]
         }
 
         try:
-            status, message = self._request_json(
-                self.webhook_url + "?wait=true", payload, method="POST", timeout=5
+            response = requests.post(
+                self.webhook_url + "?wait=true",
+                json=payload,
+                timeout=5
             )
 
-            if status not in (200, 201):
-                print(f"Discord webhook failed ({status}): {message}")
+            if response.status_code not in (200, 201):
+                print(
+                    f"Discord webhook failed "
+                    f"({response.status_code}): "
+                    f"{response.text}"
+                )
                 return
 
+            message = response.json()
+
+            message_id = message.get("id")
+
+            if not message_id:
+                print(
+                    "Discord webhook succeeded but no "
+                    "message ID was returned."
+                )
+                return
+
+            # Start the 5-minute despawn timer.
             threading.Thread(
                 target=self.mark_despawned,
-                args=(message["id"], event_name, score, timestamp, server_name),
+                args=(
+                    message_id,
+                    event_name,
+                    score,
+                    timestamp,
+                    server_name
+                ),
                 daemon=True
             ).start()
+
+        except requests.RequestException as e:
+            print(f"Discord webhook request failed: {e}")
 
         except Exception as e:
             print(f"Discord webhook failed: {e}")
 
-    def mark_despawned(self, message_id, event_name, score, timestamp, server_name):
-        time.sleep(300)  # 5 minutes
+    def mark_despawned(
+        self,
+        message_id,
+        event_name,
+        score,
+        timestamp,
+        server_name
+    ):
+        # Wait 5 minutes before marking the event as despawned.
+        # The application must remain running during this period.
+        time.sleep(300)
 
         fields = [
             {
@@ -198,38 +233,61 @@ class Notifier:
                 }
             )
 
-        fields.extend([
-            {
-                "name": "Time",
-                "value": timestamp,
-                "inline": True
-            },
-            {
-                "name": "Status",
-                "value": "❌ Despawned",
-                "inline": False
-            }
-        ])
+        fields.extend(
+            [
+                {
+                    "name": "Time",
+                    "value": timestamp,
+                    "inline": True
+                },
+                {
+                    "name": "Status",
+                    "value": "❌ Despawned",
+                    "inline": False
+                }
+            ]
+        )
 
         payload = {
             "content": "@everyone",
+
+            "allowed_mentions": {
+                "parse": ["everyone"]
+            },
+
             "embeds": [
                 {
                     "title": "🚨 Event Detected!",
+
                     "description": f"**{event_name}**",
+
                     "color": 0xFF0000,
+
                     "fields": fields,
+
                     "footer": {
-                        "text": "Event Notifier"
+                        "text": "C.R.E.N."
                     }
                 }
             ]
         }
 
         try:
-            self._request_json(
-                f"{self.webhook_url}/messages/{message_id}", payload, method="PATCH", timeout=5
+            response = requests.patch(
+                f"{self.webhook_url}/messages/{message_id}",
+                json=payload,
+                timeout=5
             )
+
+            if response.status_code not in (200, 201, 204):
+                print(
+                    f"Failed to update Discord webhook "
+                    f"({response.status_code}): "
+                    f"{response.text}"
+                )
+
+        except requests.RequestException as e:
+            print(f"Failed to update Discord webhook: {e}")
 
         except Exception as e:
             print(f"Failed to update webhook: {e}")

@@ -8,7 +8,7 @@ import os
 # RapidOCR data
 # ------------------------------------------------------------
 # Collect RapidOCR's configuration/data files, but only keep the
-# English detection + recognition ONNX models used by this app.
+# English detection + recognition ONNX models used by C.R.E.N.
 #
 # Current OCR configuration:
 #   Detection   : English mobile detector
@@ -40,7 +40,7 @@ for source, destination in all_rapidocr_datas:
 
 
 # ------------------------------------------------------------
-# Modules not needed by CR Event Notifier
+# Modules not needed by C.R.E.N.
 # ------------------------------------------------------------
 excludes = [
 
@@ -112,6 +112,7 @@ a = Analysis(
 
     datas=[
         ("alert.WAV", "."),
+        ("CREN.ico", "."),
     ] + rapidocr_datas,
 
     hiddenimports=[],
@@ -139,6 +140,7 @@ pyz = PYZ(a.pure)
 # ------------------------------------------------------------
 # Executable
 # ------------------------------------------------------------
+# Produces CREN.exe with the C.R.E.N. application icon.
 exe = EXE(
 
     pyz,
@@ -149,7 +151,9 @@ exe = EXE(
 
     exclude_binaries=True,
 
-    name="CR Event Notifier",
+    name="CREN",
+
+    icon="CREN.ico",
 
     debug=False,
 
@@ -180,6 +184,13 @@ exe = EXE(
 # ------------------------------------------------------------
 # ONEDIR distribution
 # ------------------------------------------------------------
+# Final output:
+#
+# dist/
+# └── CREN v2.0.1/
+#     ├── CREN.exe
+#     └── _internal/
+#
 coll = COLLECT(
 
     exe,
@@ -194,5 +205,5 @@ coll = COLLECT(
 
     upx_exclude=upx_exclude,
 
-    name="CR Event Notifier",
+    name="CREN v2.0.1",
 )
